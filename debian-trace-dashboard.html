@@ -38,7 +38,6 @@ body {
   overflow-x: hidden;
 }
 
-/* ── GRID BACKGROUND ── */
 body::before {
   content: '';
   position: fixed;
@@ -51,7 +50,6 @@ body::before {
   z-index: 0;
 }
 
-/* ── HEADER ── */
 header {
   position: relative;
   z-index: 10;
@@ -129,7 +127,7 @@ header {
 .pulse { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; animation: pulse 2s infinite; }
 @keyframes pulse { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:.5;transform:scale(1.4);} }
 
-/* ── MAIN LAYOUT ── */
+
 main {
   position: relative;
   z-index: 5;
@@ -141,7 +139,6 @@ main {
   gap: 40px;
 }
 
-/* ── SECTION HEADERS ── */
 .section-header {
   display: flex;
   align-items: center;
@@ -175,7 +172,7 @@ main {
   background: linear-gradient(90deg, var(--border2), transparent);
 }
 
-/* ── CARDS ── */
+
 .card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -241,7 +238,7 @@ main {
 .tag-purple { background: rgba(124,58,237,0.07); border-color: rgba(124,58,237,0.2); color: #a78bfa; }
 .tag-amber  { background: rgba(245,158,11,0.07); border-color: rgba(245,158,11,0.2); color: #fbbf24; }
 
-/* ── CODE BLOCKS ── */
+
 .cmd-block {
   background: var(--bg2);
   border: 1px solid var(--border);
@@ -287,7 +284,7 @@ main {
 .cmd-body .flag    { color: var(--accent); }
 .cmd-body .prompt  { color: var(--accent3); user-select: none; }
 
-/* ── COMMAND GRID ── */
+
 .cmd-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -296,7 +293,7 @@ main {
 
 @media(max-width: 900px) { .cmd-grid { grid-template-columns: 1fr; } }
 
-/* ── URL TABLE ── */
+
 .url-table {
   width: 100%;
   border-collapse: collapse;
@@ -340,7 +337,7 @@ main {
   font-size: 11px;
 }
 
-/* ── ALIAS GRID ── */
+
 .alias-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
@@ -375,8 +372,6 @@ main {
   color: var(--text2);
   line-height: 1.4;
 }
-
-/* ── PHASE TIMELINE ── */
 .phase-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -414,8 +409,6 @@ main {
   font-weight: 600;
   color: var(--text);
 }
-
-/* ── INSTALL CALLOUT ── */
 .install-callout {
   background: linear-gradient(135deg, rgba(0,212,255,0.06), rgba(0,255,200,0.04));
   border: 1px solid rgba(0,212,255,0.2);
@@ -441,8 +434,6 @@ main {
   color: var(--accent2);
   white-space: nowrap;
 }
-
-/* ── FOOTER ── */
 footer {
   position: relative;
   z-index: 5;
@@ -475,7 +466,7 @@ footer {
 
 <main>
 
-  <!-- INSTALL -->
+  
   <div class="install-callout">
     <div class="install-icon">🚀</div>
     <div class="install-text">
@@ -486,7 +477,6 @@ footer {
     <div class="install-cmd">sudo bash debian-trace-distro-setup.sh</div>
   </div>
 
-  <!-- INSTALL PHASES -->
   <div>
     <div class="section-header">
       <div class="section-icon">📋</div>
@@ -510,7 +500,6 @@ footer {
     </div>
   </div>
 
-  <!-- TOOL CATEGORIES -->
   <div>
     <div class="section-header">
       <div class="section-icon">🔬</div>
@@ -569,7 +558,7 @@ footer {
     </div>
   </div>
 
-  <!-- DATA SCIENCE TOOLS -->
+  
   <div>
     <div class="section-header">
       <div class="section-icon">📈</div>
@@ -616,7 +605,6 @@ footer {
     </div>
   </div>
 
-  <!-- OBSERVABILITY STACK URLS -->
   <div>
     <div class="section-header">
       <div class="section-icon">🔭</div>
@@ -690,7 +678,6 @@ footer {
     </div>
   </div>
 
-  <!-- KEY COMMANDS -->
   <div>
     <div class="section-header">
       <div class="section-icon">⌨️</div>
@@ -818,7 +805,7 @@ footer {
     </div>
   </div>
 
-  <!-- KEY ALIASES -->
+
   <div>
     <div class="section-header">
       <div class="section-icon">💡</div>
