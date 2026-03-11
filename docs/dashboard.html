@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DebianTrace Pro — Kernel Analysis Workstation</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080b14;
+  --bg2: #0d1117;
+  --bg3: #111827;
+  --surface: #151d2e;
+  --surface2: #1c2640;
+  --border: #1e2d45;
+  --border2: #243354;
+  --accent: #00d4ff;
+  --accent2: #00ffc8;
+  --accent3: #7c3aed;
+  --accent4: #f59e0b;
+  --text: #e2e8f0;
+  --text2: #94a3b8;
+  --text3: #64748b;
+  --red: #ef4444;
+  --green: #22c55e;
+  --yellow: #eab308;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --font-ui: 'Syne', sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── GRID BACKGROUND ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── HEADER ── */
+header {
+  position: relative;
+  z-index: 10;
+  padding: 48px 60px 32px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(0,212,255,0.05) 0%, transparent 100%);
+}
+
+.header-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.brand-tag {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--accent);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.brand-title {
+  font-size: 42px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  line-height: 1;
+  background: linear-gradient(135deg, #fff 0%, var(--accent) 50%, var(--accent2) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.brand-sub {
+  font-size: 14px;
+  color: var(--text2);
+  font-weight: 400;
+  letter-spacing: 0.5px;
+}
+
+.header-meta {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.badge-green  { background: rgba(34,197,94,0.1);  border: 1px solid rgba(34,197,94,0.3);  color: #4ade80; }
+.badge-blue   { background: rgba(0,212,255,0.1);  border: 1px solid rgba(0,212,255,0.3);  color: var(--accent); }
+.badge-purple { background: rgba(124,58,237,0.1); border: 1px solid rgba(124,58,237,0.3); color: #a78bfa; }
+
+.pulse { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:.5;transform:scale(1.4);} }
+
+/* ── MAIN LAYOUT ── */
+main {
+  position: relative;
+  z-index: 5;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 40px 60px 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+/* ── SECTION HEADERS ── */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.section-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  background: rgba(0,212,255,0.1);
+  border: 1px solid rgba(0,212,255,0.2);
+}
+
+.section-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.section-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--border2), transparent);
+}
+
+/* ── CARDS ── */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.card:hover {
+  border-color: var(--border2);
+  box-shadow: 0 0 30px rgba(0,212,255,0.08);
+  transform: translateY(-2px);
+}
+.card:hover::before { opacity: 1; }
+
+.card-icon { font-size: 24px; margin-bottom: 10px; }
+.card-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.card-desc {
+  font-size: 12px;
+  color: var(--text2);
+  line-height: 1.5;
+}
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 12px;
+}
+.tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 3px;
+  background: rgba(0,212,255,0.07);
+  border: 1px solid rgba(0,212,255,0.15);
+  color: var(--accent);
+  letter-spacing: 0.5px;
+}
+.tag-green  { background: rgba(34,197,94,0.07);  border-color: rgba(34,197,94,0.2);  color: #4ade80; }
+.tag-purple { background: rgba(124,58,237,0.07); border-color: rgba(124,58,237,0.2); color: #a78bfa; }
+.tag-amber  { background: rgba(245,158,11,0.07); border-color: rgba(245,158,11,0.2); color: #fbbf24; }
+
+/* ── CODE BLOCKS ── */
+.cmd-block {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.cmd-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.cmd-title {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text3);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.cmd-dots { display: flex; gap: 5px; }
+.cmd-dot { width: 9px; height: 9px; border-radius: 50%; }
+.dot-red    { background: #ef4444; }
+.dot-yellow { background: #f59e0b; }
+.dot-green  { background: #22c55e; }
+
+.cmd-body {
+  padding: 16px 20px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.8;
+  overflow-x: auto;
+}
+
+.cmd-body .comment { color: var(--text3); }
+.cmd-body .cmd     { color: var(--accent2); }
+.cmd-body .arg     { color: #fbbf24; }
+.cmd-body .string  { color: #f472b6; }
+.cmd-body .flag    { color: var(--accent); }
+.cmd-body .prompt  { color: var(--accent3); user-select: none; }
+
+/* ── COMMAND GRID ── */
+.cmd-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media(max-width: 900px) { .cmd-grid { grid-template-columns: 1fr; } }
+
+/* ── URL TABLE ── */
+.url-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.url-table th {
+  text-align: left;
+  padding: 10px 16px;
+  color: var(--text3);
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+}
+
+.url-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(30,45,69,0.5);
+  vertical-align: middle;
+}
+
+.url-table tr:last-child td { border-bottom: none; }
+.url-table tr:hover td { background: rgba(0,212,255,0.02); }
+
+.service-name {
+  font-weight: 700;
+  color: var(--text);
+}
+.url-link {
+  color: var(--accent);
+  text-decoration: none;
+  opacity: 0.8;
+  transition: opacity 0.15s;
+}
+.url-link:hover { opacity: 1; }
+.creds {
+  color: var(--text3);
+  font-size: 11px;
+}
+
+/* ── ALIAS GRID ── */
+.alias-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 10px;
+}
+
+.alias-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  transition: border-color 0.15s;
+}
+
+.alias-item:hover { border-color: var(--border2); }
+
+.alias-cmd {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent2);
+  white-space: nowrap;
+  min-width: 130px;
+  flex-shrink: 0;
+}
+
+.alias-desc {
+  font-size: 12px;
+  color: var(--text2);
+  line-height: 1.4;
+}
+
+/* ── PHASE TIMELINE ── */
+.phase-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.phase-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.phase-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(0,212,255,0.1);
+  border: 1px solid rgba(0,212,255,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.phase-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* ── INSTALL CALLOUT ── */
+.install-callout {
+  background: linear-gradient(135deg, rgba(0,212,255,0.06), rgba(0,255,200,0.04));
+  border: 1px solid rgba(0,212,255,0.2);
+  border-radius: 10px;
+  padding: 28px 32px;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.install-icon { font-size: 36px; }
+.install-text h3 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+.install-text p  { font-size: 13px; color: var(--text2); line-height: 1.6; }
+
+.install-cmd {
+  flex-shrink: 0;
+  background: var(--bg);
+  border: 1px solid rgba(0,212,255,0.3);
+  border-radius: 6px;
+  padding: 14px 20px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--accent2);
+  white-space: nowrap;
+}
+
+/* ── FOOTER ── */
+footer {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 32px;
+  border-top: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text3);
+  letter-spacing: 1px;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="brand">
+      <span class="brand-tag">Debian 12 Bookworm · x86_64</span>
+      <h1 class="brand-title">DebianTrace Pro</h1>
+      <p class="brand-sub">Kernel Tracing & Data Analysis Workstation — Professional Edition</p>
+    </div>
+    <div class="header-meta">
+      <span class="badge badge-green"><span class="pulse"></span>Ready for Production</span>
+      <span class="badge badge-blue">eBPF · BCC · bpftrace</span>
+      <span class="badge badge-purple">Grafana · Spark · ClickHouse</span>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- INSTALL -->
+  <div class="install-callout">
+    <div class="install-icon">🚀</div>
+    <div class="install-text">
+      <h3>One-Command Installation</h3>
+      <p>Run as root on a fresh Debian 12 (Bookworm) system. Installs all 13 phases automatically. ~30–60 min.<br>
+      Options: <code style="color:var(--accent)">--headless</code> · <code style="color:var(--accent)">--skip-gui</code> · <code style="color:var(--accent)">--minimal</code></p>
+    </div>
+    <div class="install-cmd">sudo bash debian-trace-distro-setup.sh</div>
+  </div>
+
+  <!-- INSTALL PHASES -->
+  <div>
+    <div class="section-header">
+      <div class="section-icon">📋</div>
+      <span class="section-title">Installation Phases</span>
+      <div class="section-line"></div>
+    </div>
+    <div class="phase-list">
+      <div class="phase-item"><div class="phase-num">01</div><div class="phase-name">System Foundation & Repos</div></div>
+      <div class="phase-item"><div class="phase-num">02</div><div class="phase-name">Kernel Headers & BPF Infra</div></div>
+      <div class="phase-item"><div class="phase-num">03</div><div class="phase-name">Perf & Tracing Arsenal</div></div>
+      <div class="phase-item"><div class="phase-num">04</div><div class="phase-name">eBPF Dev Environment</div></div>
+      <div class="phase-item"><div class="phase-num">05</div><div class="phase-name">Data Science Stack</div></div>
+      <div class="phase-item"><div class="phase-num">06</div><div class="phase-name">Observability Stack</div></div>
+      <div class="phase-item"><div class="phase-num">07</div><div class="phase-name">IDE & Dev Tools</div></div>
+      <div class="phase-item"><div class="phase-num">08</div><div class="phase-name">Shell Environment (zsh)</div></div>
+      <div class="phase-item"><div class="phase-num">09</div><div class="phase-name">Kernel Sysctl Tuning</div></div>
+      <div class="phase-item"><div class="phase-num">10</div><div class="phase-name">tmux Pro Config</div></div>
+      <div class="phase-item"><div class="phase-num">11</div><div class="phase-name">Quick Reference Docs</div></div>
+      <div class="phase-item"><div class="phase-num">12</div><div class="phase-name">XFCE Desktop (optional)</div></div>
+      <div class="phase-item"><div class="phase-num">13</div><div class="phase-name">Final Services & Cleanup</div></div>
+    </div>
+  </div>
+
+  <!-- TOOL CATEGORIES -->
+  <div>
+    <div class="section-header">
+      <div class="section-icon">🔬</div>
+      <span class="section-title">Tracing & Analysis Tools</span>
+      <div class="section-line"></div>
+    </div>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-icon">⚡</div>
+        <div class="card-name">eBPF / bpftrace</div>
+        <div class="card-desc">Linux extended Berkeley Packet Filter — programmable kernel tracing. Attach probes to kprobes, uprobes, tracepoints, perf events, network sockets.</div>
+        <div class="card-tags"><span class="tag">kprobe</span><span class="tag">uprobe</span><span class="tag">tracepoint</span><span class="tag">XDP</span></div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🔭</div>
+        <div class="card-name">BCC Tools</div>
+        <div class="card-desc">60+ ready-made eBPF tools: execsnoop, opensnoop, tcptop, biolatency, memleak, offcputime, profile, funccount, argdist, capable…</div>
+        <div class="card-tags"><span class="tag-green">execsnoop</span><span class="tag-green">biolatency</span><span class="tag-green">memleak</span></div>
+      </div>
+      <div class="card">
+        <div class="card-icon">📊</div>
+        <div class="card-name">perf + FlameGraph</div>
+        <div class="card-desc">Linux perf_event subsystem profiler. CPU sampling, cache miss analysis, scheduler latency, lock contention, memory access patterns. Brendan Gregg's FlameGraph included.</div>
+        <div class="card-tags"><span class="tag">CPU</span><span class="tag">PMU</span><span class="tag">flamegraph</span></div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🌊</div>
+        <div class="card-name">ftrace / trace-cmd</div>
+        <div class="card-desc">Kernel built-in function tracer. Function graph, event tracing, latency tracing, wake-up latency. trace-cmd wraps the sysfs interface beautifully.</div>
+        <div class="card-tags"><span class="tag-purple">function</span><span class="tag-purple">function_graph</span><span class="tag-purple">events</span></div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🔩</div>
+        <div class="card-name">SystemTap</div>
+        <div class="card-desc">High-level scripting language for dynamic kernel instrumentation. Probe kernel and user-space functions, collect statistics, extract data live from a running system.</div>
+        <div class="card-tags"><span class="tag">stap</span><span class="tag">DWARF</span><span class="tag">kernel probes</span></div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🧠</div>
+        <div class="card-name">Valgrind / heaptrack</div>
+        <div class="card-desc">Memory error detection, heap profiling, cache simulation, call graph profiling. heaptrack for massif-compatible fast heap profiling with GUI visualizer.</div>
+        <div class="card-tags"><span class="tag-amber">memcheck</span><span class="tag-amber">callgrind</span><span class="tag-amber">massif</span></div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🌐</div>
+        <div class="card-name">Network Tracing</div>
+        <div class="card-desc">Wireshark, tshark, tcpdump, nethogs, iperf3, netperf. XDP-native packet analysis. tcplife, tcptop, tcpconnect from BCC for kernel-level TCP tracing.</div>
+        <div class="card-tags"><span class="tag">XDP</span><span class="tag">Wireshark</span><span class="tag">tcplife</span></div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🏎️</div>
+        <div class="card-name">pmu-tools / turbostat</div>
+        <div class="card-desc">Hardware performance counter analysis, Intel TopDown methodology, IPC, stall cycles, branch mispredicts, memory bandwidth. turbostat for power & frequency analysis.</div>
+        <div class="card-tags"><span class="tag-green">PMU</span><span class="tag-green">TopDown</span><span class="tag-green">IPC</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DATA SCIENCE TOOLS -->
+  <div>
+    <div class="section-header">
+      <div class="section-icon">📈</div>
+      <span class="section-title">Data Science & Analysis Stack</span>
+      <div class="section-line"></div>
+    </div>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-icon">🐍</div>
+        <div class="card-name">Python Scientific Stack</div>
+        <div class="card-desc">NumPy, SciPy, Pandas, Polars, Matplotlib, Seaborn, Plotly, Bokeh, scikit-learn, XGBoost, Dask, PyArrow, py-spy, memray, scalene.</div>
+        <div class="card-tags"><span class="tag-green">NumPy</span><span class="tag-green">Polars</span><span class="tag-green">Dask</span></div>
+      </div>
+      <div class="card">
+        <div class="card-icon">📓</div>
+        <div class="card-name">JupyterLab</div>
+        <div class="card-desc">Interactive notebook environment for data exploration. Full Python, R, and Julia kernel support. Visualize perf/eBPF output data directly in notebooks.</div>
+        <div class="card-tags"><span class="tag">notebooks</span><span class="tag">interactive</span><span class="tag">widgets</span></div>
+      </div>
+      <div class="card">
+        <div class="card-icon">✨</div>
+        <div class="card-name">Apache Spark 3.5</div>
+        <div class="card-desc">Distributed large-scale data processing. Analyze gigabytes of trace files, kernel logs, and perf data with PySpark DataFrame API.</div>
+        <div class="card-tags"><span class="tag-purple">PySpark</span><span class="tag-purple">Spark SQL</span></div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🗄️</div>
+        <div class="card-name">ClickHouse</div>
+        <div class="card-desc">Columnar OLAP database optimized for analytics. Ingest millions of trace events per second. Sub-second queries on billions of rows of kernel telemetry.</div>
+        <div class="card-tags"><span class="tag-amber">OLAP</span><span class="tag-amber">columnar</span><span class="tag-amber">fast</span></div>
+      </div>
+      <div class="card">
+        <div class="card-icon">📊</div>
+        <div class="card-name">R + ggplot2</div>
+        <div class="card-desc">Statistical computing with ggplot2, dplyr, data.table, tidyr, Shiny, R Markdown. Ideal for latency distribution analysis and statistical validation.</div>
+        <div class="card-tags"><span class="tag">R</span><span class="tag">ggplot2</span><span class="tag">Shiny</span></div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🦀</div>
+        <div class="card-name">Rust + Aya</div>
+        <div class="card-desc">Write eBPF programs in Rust using the Aya framework. Type-safe, memory-safe kernel programs. Ideal for high-performance custom tracing agents.</div>
+        <div class="card-tags"><span class="tag-amber">Aya</span><span class="tag-amber">libbpf</span><span class="tag-amber">safe eBPF</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OBSERVABILITY STACK URLS -->
+  <div>
+    <div class="section-header">
+      <div class="section-icon">🔭</div>
+      <span class="section-title">Observability Stack — Service Endpoints</span>
+      <div class="section-line"></div>
+    </div>
+    <div class="cmd-block">
+      <div class="cmd-header">
+        <span class="cmd-title">Start: <code style="color:var(--accent2)">obs-up</code> in terminal</span>
+        <div class="cmd-dots"><div class="cmd-dot dot-red"></div><div class="cmd-dot dot-yellow"></div><div class="cmd-dot dot-green"></div></div>
+      </div>
+      <div style="padding: 4px;">
+        <table class="url-table">
+          <thead>
+            <tr>
+              <th>Service</th><th>URL</th><th>Credentials</th><th>Purpose</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="service-name">Grafana</span></td>
+              <td><a class="url-link" href="http://localhost:3000">http://localhost:3000</a></td>
+              <td><span class="creds">admin / tracepro2024</span></td>
+              <td style="color:var(--text2);font-size:12px">Dashboards, alerts, visualization</td>
+            </tr>
+            <tr>
+              <td><span class="service-name">Prometheus</span></td>
+              <td><a class="url-link" href="http://localhost:9090">http://localhost:9090</a></td>
+              <td><span class="creds">—</span></td>
+              <td style="color:var(--text2);font-size:12px">Metrics scraping & PromQL</td>
+            </tr>
+            <tr>
+              <td><span class="service-name">ClickHouse</span></td>
+              <td><a class="url-link" href="http://localhost:8123">http://localhost:8123</a></td>
+              <td><span class="creds">default / (no pass)</span></td>
+              <td style="color:var(--text2);font-size:12px">High-speed event analytics</td>
+            </tr>
+            <tr>
+              <td><span class="service-name">Loki</span></td>
+              <td><a class="url-link" href="http://localhost:3100">http://localhost:3100</a></td>
+              <td><span class="creds">—</span></td>
+              <td style="color:var(--text2);font-size:12px">Log aggregation (kernel logs)</td>
+            </tr>
+            <tr>
+              <td><span class="service-name">Tempo</span></td>
+              <td><a class="url-link" href="http://localhost:3200">http://localhost:3200</a></td>
+              <td><span class="creds">—</span></td>
+              <td style="color:var(--text2);font-size:12px">Distributed tracing backend</td>
+            </tr>
+            <tr>
+              <td><span class="service-name">Node Exporter</span></td>
+              <td><a class="url-link" href="http://localhost:9100">http://localhost:9100</a></td>
+              <td><span class="creds">—</span></td>
+              <td style="color:var(--text2);font-size:12px">Host metrics (CPU, mem, I/O)</td>
+            </tr>
+            <tr>
+              <td><span class="service-name">cAdvisor</span></td>
+              <td><a class="url-link" href="http://localhost:8080">http://localhost:8080</a></td>
+              <td><span class="creds">—</span></td>
+              <td style="color:var(--text2);font-size:12px">Container resource metrics</td>
+            </tr>
+            <tr>
+              <td><span class="service-name">JupyterLab</span></td>
+              <td><a class="url-link" href="http://localhost:8888">http://localhost:8888</a></td>
+              <td><span class="creds">token shown in terminal</span></td>
+              <td style="color:var(--text2);font-size:12px">Interactive data analysis</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- KEY COMMANDS -->
+  <div>
+    <div class="section-header">
+      <div class="section-icon">⌨️</div>
+      <span class="section-title">Essential Commands</span>
+      <div class="section-line"></div>
+    </div>
+    <div class="cmd-grid">
+
+      <div class="cmd-block">
+        <div class="cmd-header">
+          <span class="cmd-title">eBPF / bpftrace one-liners</span>
+          <div class="cmd-dots"><div class="cmd-dot dot-red"></div><div class="cmd-dot dot-yellow"></div><div class="cmd-dot dot-green"></div></div>
+        </div>
+        <div class="cmd-body">
+<span class="comment"># CPU stack trace profiling (99Hz)</span>
+<span class="prompt">$</span> <span class="cmd">sudo bpftrace</span> <span class="arg">-e</span> <span class="string">'profile:hz:99 { @[kstack] = count(); }'</span>
+
+<span class="comment"># All syscalls by process</span>
+<span class="prompt">$</span> <span class="cmd">bt-syscalls</span>
+
+<span class="comment"># Trace every file open</span>
+<span class="prompt">$</span> <span class="cmd">bt-openat</span>
+
+<span class="comment"># Disk I/O latency histogram</span>
+<span class="prompt">$</span> <span class="cmd">bt-biodist</span>
+
+<span class="comment"># OOM kill watcher</span>
+<span class="prompt">$</span> <span class="cmd">bt-oomkill</span>
+
+<span class="comment"># TCP connection tracing</span>
+<span class="prompt">$</span> <span class="cmd">bt-tcpconn</span>
+
+<span class="comment"># malloc size distribution</span>
+<span class="prompt">$</span> <span class="cmd">bt-malloc</span>
+        </div>
+      </div>
+
+      <div class="cmd-block">
+        <div class="cmd-header">
+          <span class="cmd-title">perf + FlameGraph</span>
+          <div class="cmd-dots"><div class="cmd-dot dot-red"></div><div class="cmd-dot dot-yellow"></div><div class="cmd-dot dot-green"></div></div>
+        </div>
+        <div class="cmd-body">
+<span class="comment"># Live CPU hotspot view</span>
+<span class="prompt">$</span> <span class="cmd">perf-cpu</span>
+
+<span class="comment"># Full flamegraph (10s capture → SVG)</span>
+<span class="prompt">$</span> <span class="cmd">perf-flame</span>
+
+<span class="comment"># L1/L2/LLC cache miss stats</span>
+<span class="prompt">$</span> <span class="cmd">perf-cache</span>
+
+<span class="comment"># Scheduler wake-up latency</span>
+<span class="prompt">$</span> <span class="cmd">perf-sched</span>
+
+<span class="comment"># Memory access patterns</span>
+<span class="prompt">$</span> <span class="cmd">perf-mem</span>
+
+<span class="comment"># Custom flamegraph for PID</span>
+<span class="prompt">$</span> <span class="cmd">flame</span> <span class="arg">1234</span> <span class="flag">/tmp/myapp.svg</span> <span class="arg">30</span>
+
+<span class="comment"># Lock contention analysis</span>
+<span class="prompt">$</span> <span class="cmd">perf-lock</span>
+        </div>
+      </div>
+
+      <div class="cmd-block">
+        <div class="cmd-header">
+          <span class="cmd-title">BCC Tools (60+ ready-to-use)</span>
+          <div class="cmd-dots"><div class="cmd-dot dot-red"></div><div class="cmd-dot dot-yellow"></div><div class="cmd-dot dot-green"></div></div>
+        </div>
+        <div class="cmd-body">
+<span class="comment"># Trace all new process executions</span>
+<span class="prompt">$</span> <span class="cmd">bcc-execsnoop</span>
+
+<span class="comment"># File open tracing</span>
+<span class="prompt">$</span> <span class="cmd">bcc-opensnoop</span>
+
+<span class="comment"># Block I/O latency histogram</span>
+<span class="prompt">$</span> <span class="cmd">bcc-biolatency</span>
+
+<span class="comment"># Memory leak detection</span>
+<span class="prompt">$</span> <span class="cmd">bcc-memleak</span>
+
+<span class="comment"># Off-CPU time profiling</span>
+<span class="prompt">$</span> <span class="cmd">bcc-offcputime</span>
+
+<span class="comment"># TCP session lifespan</span>
+<span class="prompt">$</span> <span class="cmd">bcc-tcplife</span>
+
+<span class="comment"># Linux capability check trace</span>
+<span class="prompt">$</span> <span class="cmd">bcc-capable</span>
+        </div>
+      </div>
+
+      <div class="cmd-block">
+        <div class="cmd-header">
+          <span class="cmd-title">ftrace / trace-cmd</span>
+          <div class="cmd-dots"><div class="cmd-dot dot-red"></div><div class="cmd-dot dot-yellow"></div><div class="cmd-dot dot-green"></div></div>
+        </div>
+        <div class="cmd-body">
+<span class="comment"># Start function tracer</span>
+<span class="prompt">$</span> <span class="cmd">ftrace-start</span>
+
+<span class="comment"># Read trace output</span>
+<span class="prompt">$</span> <span class="cmd">ftrace-read</span>
+
+<span class="comment"># List available events</span>
+<span class="prompt">$</span> <span class="cmd">ftrace-events</span>
+
+<span class="comment"># Function graph recording</span>
+<span class="prompt">$</span> <span class="cmd">trace-cmd record</span> <span class="flag">-p function_graph</span> <span class="flag">-g</span> <span class="arg">do_sys_open</span> sleep 5
+
+<span class="comment"># View trace report</span>
+<span class="prompt">$</span> <span class="cmd">trace-cmd report</span>
+
+<span class="comment"># GUI viewer</span>
+<span class="prompt">$</span> <span class="cmd">kernelshark</span>
+
+<span class="comment"># Find function to probe</span>
+<span class="prompt">$</span> <span class="cmd">kern-probe</span> <span class="arg">tcp_sendmsg</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- KEY ALIASES -->
+  <div>
+    <div class="section-header">
+      <div class="section-icon">💡</div>
+      <span class="section-title">Shell Aliases (available in zsh after install)</span>
+      <div class="section-line"></div>
+    </div>
+    <div class="alias-grid">
+      <div class="alias-item"><div class="alias-cmd">obs-up</div><div class="alias-desc">Start full observability stack (Grafana + Prometheus + ClickHouse + Loki + Tempo)</div></div>
+      <div class="alias-item"><div class="alias-cmd">obs-status</div><div class="alias-desc">Show Docker container health for all observability services</div></div>
+      <div class="alias-item"><div class="alias-cmd">perf-cpu</div><div class="alias-desc">Live CPU top with call graphs (99Hz sampling, all CPUs)</div></div>
+      <div class="alias-item"><div class="alias-cmd">perf-flame</div><div class="alias-desc">10-second CPU capture → automatic flamegraph SVG</div></div>
+      <div class="alias-item"><div class="alias-cmd">perf-cache</div><div class="alias-desc">L1/L2/LLC cache reference and miss statistics</div></div>
+      <div class="alias-item"><div class="alias-cmd">perf-sched</div><div class="alias-desc">Scheduler wake-up latency recording and report</div></div>
+      <div class="alias-item"><div class="alias-cmd">bt-syscalls</div><div class="alias-desc">eBPF syscall counter by process (live)</div></div>
+      <div class="alias-item"><div class="alias-cmd">bt-openat</div><div class="alias-desc">Trace file opens: process name + filename</div></div>
+      <div class="alias-item"><div class="alias-cmd">bt-biodist</div><div class="alias-desc">Block I/O latency histogram via eBPF kprobes</div></div>
+      <div class="alias-item"><div class="alias-cmd">bt-profile</div><div class="alias-desc">CPU profiling by kernel stack trace (99Hz)</div></div>
+      <div class="alias-item"><div class="alias-cmd">bt-malloc</div><div class="alias-desc">malloc allocation size distribution via uprobe</div></div>
+      <div class="alias-item"><div class="alias-cmd">trace-mode-on</div><div class="alias-desc">Switch CPUs to performance governor, disable watchdog</div></div>
+      <div class="alias-item"><div class="alias-cmd">ftrace-start</div><div class="alias-desc">Enable kernel function tracer</div></div>
+      <div class="alias-item"><div class="alias-cmd">ftrace-read</div><div class="alias-desc">Print current trace buffer</div></div>
+      <div class="alias-item"><div class="alias-cmd">dmesg-watch</div><div class="alias-desc">Live kernel log tail with human-readable timestamps</div></div>
+      <div class="alias-item"><div class="alias-cmd">dmesg-errors</div><div class="alias-desc">Show only kernel errors, criticals, alerts</div></div>
+      <div class="alias-item"><div class="alias-cmd">jupyter</div><div class="alias-desc">Launch JupyterLab on 0.0.0.0:8888</div></div>
+      <div class="alias-item"><div class="alias-cmd">ch</div><div class="alias-desc">Connect to ClickHouse client (Docker or local)</div></div>
+      <div class="alias-item"><div class="alias-cmd">ports</div><div class="alias-desc">Show all listening ports (ss -tulnp)</div></div>
+      <div class="alias-item"><div class="alias-cmd">vmstat-watch</div><div class="alias-desc">Live VM/IO statistics every 1 second</div></div>
+      <div class="alias-item"><div class="alias-cmd">sched-debug</div><div class="alias-desc">Dump /proc/sched_debug for scheduler analysis</div></div>
+      <div class="alias-item"><div class="alias-cmd">irq-affinity</div><div class="alias-desc">Show interrupt counts per CPU</div></div>
+      <div class="alias-item"><div class="alias-cmd">strace-net</div><div class="alias-desc">strace filtering network syscalls only</div></div>
+      <div class="alias-item"><div class="alias-cmd">kern-probe</div><div class="alias-desc">Search available kernel probes by pattern</div></div>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  DebianTrace Pro — Kernel Tracing &amp; Data Analysis Workstation &nbsp;·&nbsp;
+  Brendan Gregg's eBPF/perf/BCC tools included &nbsp;·&nbsp;
+  Grafana + Prometheus + ClickHouse + Loki + Tempo &nbsp;·&nbsp;
+  Apache Spark 3.5 + JupyterLab + Python + R &nbsp;·&nbsp;
+  eBPF · bpftrace · BCC · perf · ftrace · SystemTap · Valgrind
+</footer>
+
+</body>
+</html>
